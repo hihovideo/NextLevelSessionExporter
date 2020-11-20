@@ -588,18 +588,6 @@ extension NextLevelSessionExporter {
     
     // always called on the main thread
     internal func complete() {
-        if self._reader?.status == .cancelled || self._writer?.status == .cancelled {
-            guard let outputURL = self.outputURL else {
-                self._completionHandler?(.failure(NextLevelSessionExporterError.cancelled))
-                return
-            }
-            if FileManager.default.fileExists(atPath: outputURL.absoluteString) {
-                try? FileManager.default.removeItem(at: outputURL)
-            }
-            self._completionHandler?(.failure(NextLevelSessionExporterError.cancelled))
-            return
-        }
-        
         guard let reader = self._reader else {
             self._completionHandler?(.failure(NextLevelSessionExporterError.setupFailure))
             self._completionHandler = nil
@@ -642,6 +630,18 @@ extension NextLevelSessionExporter {
         default:
             // do nothing
             break
+        }
+
+        if self._reader?.status == .cancelled || self._writer?.status == .cancelled {
+            guard let outputURL = self.outputURL else {
+                self._completionHandler?(.failure(NextLevelSessionExporterError.cancelled))
+                return
+            }
+            if FileManager.default.fileExists(atPath: outputURL.absoluteString) {
+                try? FileManager.default.removeItem(at: outputURL)
+            }
+            self._completionHandler?(.failure(NextLevelSessionExporterError.cancelled))
+            return
         }
 
         self._completionHandler?(.success(self.status))
