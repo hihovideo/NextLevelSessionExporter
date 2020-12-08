@@ -190,6 +190,7 @@ extension NextLevelSessionExporter {
     /// - Throws: Failure indication thrown when an error has occurred during export.
     public func export(renderHandler: RenderHandler? = nil,
                        progressHandler: ProgressHandler? = nil,
+                       timeoutTime: DispatchTime = .distantFuture,
                        completionHandler: CompletionHandler? = nil) {
         guard let asset = self.asset,
               let outputURL = self.outputURL,
@@ -303,8 +304,14 @@ extension NextLevelSessionExporter {
         }
         
         DispatchQueue.global().async {
-            audioSemaphore.wait()
-            videoSemaphore.wait()
+            let waitAudioResult = audioSemaphore.wait(timeout: timeoutTime)
+            let waitVideoResult = videoSemaphore.wait(timeout: timeoutTime)
+            if waitAudioResult == .timedOut || waitVideoResult == .timedOut {
+                DispatchQueue.main.async {
+                    self.cancelExport()
+                }
+            }
+            
             DispatchQueue.main.async {
                 self.finish()
             }
